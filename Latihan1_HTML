@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smash The Block</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<style>
+    body {
+    margin: 0;
+    padding: 0;
+    display: flex;
+    background: linear-gradient(#2efa00, #f9d03f); /* Gradient background */
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    height: 100vh;
+    overflow: hidden; 
+    font-family: Arial, Helvetica, sans-serif;
+} 
+
+.container {
+    background-color: rgba(255, 255, 255, 0.7); /* Transparent white background */
+    padding: 20px;
+    border-radius: 10px;
+}
+
+h1 {
+    color: #6C3428; /* Dark brown color */
+}
+
+canvas {
+    background-color: #2efa00;
+    border-radius: 5px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3); /* Soft shadow effect */
+}
+
+
+</style>
+<body>
+    <div class="container">
+        <h1>Bola Pantul Game</h1>
+        <canvas id="canvas1" width="650" height="400" style="border: 1px solid black;"></canvas>        
+    </div>    
+    
+    <script src="script.js"></script>
+
+    <script>
+        // Variabel Canvas
+        let canvas = document.getElementById("canvas1")
+        let ctx = canvas.getContext("2d")
+        let ballRadius = 10
+        let canvasRadius = 20
+        let x = canvas.width/2
+        let y = canvas.height - 30
+        let dx = 2
+        let dy = -2
+
+        // Paddle
+        let paddleHeight = 12;
+        let paddleWidth = 72;
+
+        // Titik Mulai Paddle
+        let paddleX = (canvas.width - paddleWidth)/2
+
+        let rightPressed = false
+        let leftPressed = false
+
+        // Variabel Block
+        var blockRowCount = 4
+        var blockColumnCount = 7
+        var blockWidth = 72
+        var blockHeight = 24
+        var blockPadding = 12
+        var blockOffsetLeft = 38
+        var blockOffsetTop = 50
+
+        // Skor
+        let score = 0;
+
+        // Array Blocks
+        let blocks = []
+        for (c = 0; c < blockColumnCount; c++){
+            blocks[c] = []
+            for (r =0; r < blockRowCount; r++){
+                // Posisi x dan y Block
+                blocks[c][r] = {x: 0, y: 0, status:1}
+            }            
+        }
+
+        // Membuat Event
+        document.addEventListener("keydown", keyDownHandler, false)
+        document.addEventListener("keyup", keyUpHandler, false)
+        document.addEventListener("mousemove", mouseMoveHandler, false)
+
+        function mouseMoveHandler(e){
+            var relativeX = e.clientX - canvas.offsetLeft;
+            if(relativeX > 0 && relativeX < canvas.width){
+                paddleX = relativeX - paddleWidth/2
+            }
+        }
+
+        function keyDownHandler(e){
+            if (e.key === "ArrowRight"){
+                rightPressed = true;
+            } else if (e.key === "ArrowLeft"){
+                leftPressed = true;
+            }
+        }
+
+        function keyUpHandler(e){
+            if (e.key === "ArrowRight"){
+                rightPressed = false;
+            } else if (e.key === "ArrowLeft"){
+                leftPressed = false;;
+            }
+        }
+
+        function drawBall(){
+            ctx.beginPath()
+            ctx.arc(x,y,ballRadius,0,Math.PI*2)
+            ctx.fillStyle = 'white'
+            ctx.fill()
+            ctx.closePath()
+        }
+
+        function drawPaddle(){
+            ctx.beginPath()
+            ctx.rect(paddleX,canvas.height-paddleHeight,paddleWidth,paddleHeight)
+            ctx.fillStyle = 'white'
+            ctx.fill()
+            ctx.closePath()
+        }
+
+        // Membuat Block
+        function drawBlocks(){
+            for (c = 0; c < blockColumnCount; c++){
+                for (r = 0; r < blockRowCount; r++){
+                    if (blocks[c][r].status === 1){
+                        var blockX = (c*(blockWidth + blockPadding)) + blockOffsetLeft;
+                        var blockY = (r*(blockHeight + blockPadding)) + blockOffsetTop;
+                        blocks[c][r].x = blockX;
+                        blocks[c][r].y = blockY;
+                        ctx.beginPath()
+                        ctx.rect(blockX, blockY, blockWidth, blockHeight)
+                        ctx.fillStyle = '#6C3428'
+                        ctx.fill()
+                        ctx.closePath()
+                    }
+                }
+            }
+        }
+
+        // Function Menghitung Skor
+        function drawScore(){
+            // Kotak skor            
+            ctx.fillStyle = 'brown';
+            ctx.fillRect(0, 0, 110, 40);
+
+            // Teks skor
+            ctx.font = '20px Arial';            
+            ctx.fillStyle = 'white';
+            ctx.fillText('Score: '+score, 13, 28);
+        }
+
+        // Kolasi
+        function collisionDetection(){
+            let blockCount = 0;
+            for (c=0; c<blockColumnCount; c++){
+                for (r=0;r<blockRowCount;r++){
+                    var b=blocks[c][r]
+                    if(b.status === 1){
+                        if(x>b.x && x < b.x + blockWidth && y > b.y && y < b.y + blockHeight){
+                            dy = -dy;
+                            b.status = 0;
+                            score++;
+                            blockCount++;
+                        }
+                    }
+                }
+            }
+            if (blockCount > 0 && score === blockRowCount*blockColumnCount){
+                setTimeout(function(){
+                    alert("Selamat!! Anda Menang!!")
+                    document.location.reload()
+                }, 2000); 
+            }
+        }
+
+        function draw(){
+            ctx.clearRect(0,0,canvas.width, canvas.height)
+            drawScore()
+            drawBlocks()
+            drawBall()
+            drawPaddle()
+            collisionDetection()
+
+            // Batas Kanan & Kiri Kanvas
+            if(x+dx > canvas.width - ballRadius || x+dx < ballRadius){
+                dx = -dx
+            }
+
+            // Batas Atas Kanvas
+            if(y+dy < ballRadius){
+                dy = -dy
+            }else if(y+dy>canvas.height-ballRadius){
+                // Mendeteksi Menyentuh Paddle
+                if(x>paddleX && x < paddleX + paddleWidth){
+                    dy = -dy
+                    // Ketika Tidak Menyentuh Paddle == Game Over
+                } else {
+                    alert("GAME OVER!")
+                    document.location.reload()
+                }
+            }
+
+            // Batas Bawah Kanvas
+            if (y+dy > canvas.height - ballRadius || y+dy < ballRadius){
+                dy = -dy
+            }
+
+            // Penggerak Paddle
+            if (rightPressed && paddleX < canvas.width - paddleWidth){
+                paddleX += 7;
+            }else if(leftPressed && paddleX > 0){
+                paddleX -= 7;
+            }
+
+            // Penggerak Bola
+            x += dx;
+            y += dy;
+
+            requestAnimationFrame(draw);
+        }
+
+        draw(); // Start the game loop
+    </script>
+</body>
+</html>
